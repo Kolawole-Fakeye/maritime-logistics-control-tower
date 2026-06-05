@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import requests
-import plotly.express as px
 import os
 
 st.set_page_config(page_title="Maersk West Africa Control Tower", layout="wide")
@@ -9,7 +8,7 @@ st.title("🚢 Maersk West Africa Fleet Control Tower")
 st.markdown("---")
 
 # Use environment variable for cloud deployment, fallback to local for development
-API_BASE_URL = os.getenv("MAERSK_API_URL", "http://127.0.0.1:8000")
+API_BASE_URL = os.getenv("MAERSK_API_URL", "https://maersk-backend-api.onrender.com") # Change to your live Render URL if deployed
 
 @st.cache_data(ttl=60)
 def fetch_api_data(endpoint):
@@ -37,22 +36,19 @@ if metrics_data and raw_data:
     
     st.markdown("---")
     
-    # Middle Row: Professional Interactive Visualization Charts
+    # Middle Row: Native Streamlit Charts (Zero External Dependencies Required)
     left, right = st.columns(2)
     
     with left:
         st.subheader("⚠️ Port Bottlenecks (Avg Days in Port)")
         port_df = pd.DataFrame(list(metrics_data["port_bottlenecks"].items()), columns=["Port", "Avg Days"])
-        fig_port = px.bar(port_df, x="Port", y="Avg Days", text_auto='.1f', color="Avg Days",
-                          color_continuous_scale="Reds")
-        st.plotly_chart(fig_port, use_container_width=True)
+        # Set the index to 'Port' so Streamlit labels the axis correctly
+        st.bar_chart(port_df.set_index("Port"))
         
     with right:
         st.subheader("💰 Financial Leakage by Vessel")
         vessel_df = pd.DataFrame(list(metrics_data["financial_leakage"].items()), columns=["Vessel", "Demurrage (USD)"])
-        fig_vessel = px.bar(vessel_df, y="Vessel", x="Demurrage (USD)", orientation='h', text_auto=',.0f',
-                            color="Demurrage (USD)", color_continuous_scale="Purples")
-        st.plotly_chart(fig_vessel, use_container_width=True)
+        st.bar_chart(vessel_df.set_index("Vessel"))
         
     st.markdown("---")
     
