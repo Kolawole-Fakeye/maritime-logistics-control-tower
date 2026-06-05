@@ -1,42 +1,17 @@
-# Maersk West Africa Fleet Control Tower (SHIPPING-AFRICA)
+## 🚢 Maersk West Africa Fleet Control Tower
+### Logistics Telemetry & Financial Compliance Engine
 
-An interactive, data-driven fleet logistics and telemetry control tower dashboard built to monitor shipping performance, quantify supply chain bottlenecks, and track financial leakages across West African ports. Built using **Streamlit** and **Pandas**, this system transforms raw fleet telemetry metrics into high-impact operational intelligence.
+A decoupled full-stack data system designed to track maritime fleet operations, monitor demurrage financial leakages, and log carbon intensity ratings (CII) across West African supply chain hubs. Built completely using high-speed CSV serialization pathways.
 
----
+### 🚀 Production Deployment Interfaces
 
-## 🚀 Key Performance Indicators (KPIs) Tracked
+* **Interactive Control Tower App:** [View Live Streamlit Dashboard](https://share.streamlit.io/)  <!-- Paste your finished streamlit app link here -->
+* **Central API Gateway:** Live on Render Cloud Infrastructure
+  * **API Service Status:** [https://maersk-backend-api.onrender.com/](https://maersk-backend-api.onrender.com/)  <!-- Update with your Render URL -->
+  * **Logistics KPIs Endpoint:** [https://maersk-backend-api.onrender.com/api/v1/metrics](https://maersk-backend-api.onrender.com/api/v1/metrics)
+  * **Interactive API Documentation (Swagger UI):** [https://maersk-backend-api.onrender.com/docs](https://maersk-backend-api.onrender.com/docs)
 
-* **Total Voyages Tracked:** Direct volume visibility into active and completed shipping routes across the continent.
-* **Avg Turnaround Time:** Monitored via the `days_in_port` metric to immediately isolate port operational inefficiencies.
-* **Financial Leakage (Demurrage Penalties):** Aggregated tracking of structural delays (`demurrage_costs_usd`) to calculate bottom-line capital losses.
-* **Environmental Impact Tracker:** Cumulative tracking of vessel carbon output (`co2_emissions_mt`) to support green logistics and sustainability benchmarking.
-
----
-
-## 📊 Operational Analytics Visualizations
-
-The control tower segments telemetry data into two crucial operational views:
-1. **⚠️ Port Bottlenecks Matrix:** A dynamic bar chart aggregating the average number of days vessels spend idle at port (`days_in_port`), categorized by the destination terminal (`arrival_port`).
-2. **💰 Financial Leakage Explorer:** An operational cost bar chart grouping total accrued demurrage penalties strictly by individual shipping craft (`vessel_name`) to isolate high-risk assets.
-
----
-
-## 🛠️ Tech Stack & Architecture
-
-* **Language:** Python 3.10+
-* **Frontend UI Framework:** Streamlit (Wide-layout Interactive User Interface)
-* **Data Ingestion & Analytics:** Pandas
-* **Data Source:** Tabular Fleet Telemetry Stream (`data/production_efficiency_metrics.csv`)
-
----
-
-## 📋 Workspace Code Architecture
-
-```python
-import streamlit as st
-import pandas as pd
-import os
-
-# Configures an expansive wide-layout control viewport
-st.set_page_config(page_title="Maersk West Africa Control Tower", layout="wide")
-st.title("🚢 Maersk West Africa Fleet Control Tower")
+### 🏗️ Architecture Stack
+* **Frontend:** Streamlit Core UI utilizing Plotly Express dynamic vector charts.
+* **Backend:** FastAPI REST gateway providing structured endpoints for telemetry schemas.
+* **Data Layer:** Native Python CSV file compilation—fully zero-dependency for swift cloud container deployment.
