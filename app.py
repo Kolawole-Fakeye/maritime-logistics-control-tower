@@ -7,8 +7,8 @@ st.set_page_config(page_title="Maersk West Africa Control Tower", layout="wide")
 st.title("🚢 Maersk West Africa Fleet Control Tower")
 st.markdown("---")
 
-# Use environment variable for cloud deployment, fallback to local for development
-API_BASE_URL = os.getenv("MAERSK_API_URL", "https://maersk-backend-api.onrender.com") # Change to your live Render URL if deployed
+# Point to your live API Gateway on Render
+API_BASE_URL = os.getenv("MAERSK_API_URL", "https://maersk-backend-api.onrender.com")
 
 @st.cache_data(ttl=60)
 def fetch_api_data(endpoint):
@@ -20,14 +20,14 @@ def fetch_api_data(endpoint):
     except Exception:
         return None
 
-# Fetch computed data from our FastAPI backend
+# Fetch processed JSON data packages from the FastAPI backend
 metrics_data = fetch_api_data("/api/v1/metrics")
 raw_data = fetch_api_data("/api/v1/telemetry")
 
 if metrics_data and raw_data:
     kpis = metrics_data["kpis"]
     
-    # Top Row: Operational KPIs
+    # KPI Matrix
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Total Voyages Tracked", f"{kpis['total_voyages']}")
     col2.metric("Avg Turnaround Time", f"{kpis['avg_turnaround_days']:.1f} Days")
@@ -36,13 +36,12 @@ if metrics_data and raw_data:
     
     st.markdown("---")
     
-    # Middle Row: Native Streamlit Charts (Zero External Dependencies Required)
+    # Layout Grid: Native Streamlit Analytics (Completely Bypasses Module Errors)
     left, right = st.columns(2)
     
     with left:
         st.subheader("⚠️ Port Bottlenecks (Avg Days in Port)")
         port_df = pd.DataFrame(list(metrics_data["port_bottlenecks"].items()), columns=["Port", "Avg Days"])
-        # Set the index to 'Port' so Streamlit labels the axis correctly
         st.bar_chart(port_df.set_index("Port"))
         
     with right:
@@ -52,7 +51,7 @@ if metrics_data and raw_data:
         
     st.markdown("---")
     
-    # Bottom Row: Complete Telemetry Log
+    # Full Operational Telemetry Display
     st.subheader("📋 Raw Telemetry Data Stream")
     df_raw = pd.DataFrame(raw_data)
     st.dataframe(df_raw, use_container_width=True)
