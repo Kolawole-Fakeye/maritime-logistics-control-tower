@@ -1,60 +1,72 @@
 import streamlit as st
 import pandas as pd
-import requests
+import numpy as np
 import os
 
 st.set_page_config(page_title="Maersk West Africa Control Tower", layout="wide")
 st.title("🚢 Maersk West Africa Fleet Control Tower")
 st.markdown("---")
 
-# Point to your live API Gateway on Render
-API_BASE_URL = os.getenv("MAERSK_API_URL", "https://maersk-backend-api.onrender.com")
+DATA_PATH = "data/production_efficiency_metrics.csv"
 
-@st.cache_data(ttl=60)
-def fetch_api_data(endpoint):
-    try:
-        response = requests.get(f"{API_BASE_URL}{endpoint}")
-        if response.status_code == 200:
-            return response.json()
-        return None
-    except Exception:
-        return None
+# --- INTERNAL DATA GENERATION LAYER ---
+@st.cache_data
+def ensure_local_data():
+    if not os.path.exists(DATA_PATH):
+        np.random.seed(42)
+        voyages = 150
+        ports = ['Apapa', 'Tin Can Island', 'Tema', 'Luanda']
+        vessels = ['Maersk Mc-Kinney Moller', 'Maersk Mc-Kinney', 'Maersk Hangzhou', 'Maersk Camacari', 'Maersk Herrera']
+        
+        df = pd.DataFrame({
+            'voyage_id': [f"V-2026-{i:03d}" for i in range(1, voyages + 1)],
+            'vessel_name': np.random.choice(vessels, voyages),
+            'arrival_port': np.random.choice(ports, voyages, p=[0.4, 0.3, 0.15, 0.15]),
+            'cargo_volume_teu': np.random.randint(2500, 8500, voyages)
+        })
+        
+        df['days_in_port'] = df['arrival_port'].apply(lambda p: np.random.randint(5, 18) if p in ['Apapa', 'Tin Can Island'] else np.random.randint(2, 6))
+        df['demurrage_costs_usd'] = df['days_in_port'].apply(lambda x: max(0, (x - 5) * 3500))
+        df['fuel_consumed_mt'] = df['days_in_port'] * np.random.uniform(35.0, 45.0, voyages)
+        df['co2_emissions_mt'] = df['fuel_consumed_mt'] * 3.114
+        df['cii_rating'] = df['days_in_port'].apply(lambda d: 'A' if d<=4 else 'B' if d<=6 else 'C' if d<=9 else 'D' if d<=13 else 'E')
+        
+        os.makedirs('data', exist_ok=True)
+        df.to_csv(DATA_PATH, index=False)
 
-# Fetch processed JSON data packages from the FastAPI backend
-metrics_data = fetch_api_data("/api/v1/metrics")
-raw_data = fetch_api_data("/api/v1/telemetry")
+# Trigger the check to make sure the CSV exists inside the Streamlit Container
+ensure_local_data()
 
-if metrics_data and raw_data:
-    kpis = metrics_data["kpis"]
+# --- DASHBOARD VISUALIZATION LAYER ---
+if os.path.exists(DATA_PATH):
+    df = pd.read_csv(DATA_PATH)
     
-    # KPI Matrix
+    # KPI Matrix Row
     col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Total Voyages Tracked", f"{kpis['total_voyages']}")
-    col2.metric("Avg Turnaround Time", f"{kpis['avg_turnaround_days']:.1f} Days")
-    col3.metric("Total Demurrage Penalties", f"${kpis['total_demurrage_usd']:,.2f}")
-    col4.metric("Total Carbon Footprint", f"{kpis['total_co2_mt']:,.1f} MT CO2")
+    col1.metric("Total Voyages Tracked", f"{len(df)}")
+    col2.metric("Avg Turnaround Time", f"{df['days_in_port'].mean():.1f} Days")
+    col3.metric("Total Demurrage Penalties", f"${df['demurrage_costs_usd'].sum():,.2f}")
+    col4.metric("Total Carbon Footprint", f"{df['co2_emissions_mt'].sum():,.1f} MT CO2")
     
     st.markdown("---")
     
-    # Layout Grid: Native Streamlit Analytics (Completely Bypasses Module Errors)
+    # Analytics Charts Row (Native & Zero-Dependency)
     left, right = st.columns(2)
     
     with left:
         st.subheader("⚠️ Port Bottlenecks (Avg Days in Port)")
-        port_df = pd.DataFrame(list(metrics_data["port_bottlenecks"].items()), columns=["Port", "Avg Days"])
-        st.bar_chart(port_df.set_index("Port"))
+        port_analysis = df.groupby("arrival_port")["days_in_port"].mean()
+        st.bar_chart(port_analysis)
         
     with right:
         st.subheader("💰 Financial Leakage by Vessel")
-        vessel_df = pd.DataFrame(list(metrics_data["financial_leakage"].items()), columns=["Vessel", "Demurrage (USD)"])
-        st.bar_chart(vessel_df.set_index("Vessel"))
+        vessel_analysis = df.groupby("vessel_name")["demurrage_costs_usd"].sum()
+        st.bar_chart(vessel_analysis)
         
     st.markdown("---")
     
-    # Full Operational Telemetry Display
+    # Complete Operational Telemetry Log
     st.subheader("📋 Raw Telemetry Data Stream")
-    df_raw = pd.DataFrame(raw_data)
-    st.dataframe(df_raw, use_container_width=True)
-
+    st.dataframe(df, use_container_width=True)
 else:
-    st.error("📡 Unable to connect to the Maersk API Gateway. Please verify the backend service is running.")
+    st.error("Telemetry data initialization failed.")
